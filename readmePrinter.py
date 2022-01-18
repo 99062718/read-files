@@ -1,8 +1,5 @@
 import time
 
 with open("README.md") as text:
-    lines = text.readlines()
-
-    for line in lines:
+    for line in text:
         print(line)
-        time.sleep(1)
