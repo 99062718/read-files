@@ -1,8 +1,12 @@
 import tkinter
 from tkinter import ttk, StringVar, IntVar, messagebox
+import yaml
 
 mainWindow = tkinter.Tk()
 mainWindow.configure(padx=50, pady=10)
+
+with open("settings.yml") as file:
+    prices = yaml.safe_load(file)
 
 content = []
 amountBolletjes = 0
@@ -21,16 +25,7 @@ extras = {
         "Caramel saus": 0
     }
 }
-prices = {
-    "bolletje": 0.95,
-    "hoorntje": 1.25,
-    "bakje": 0.75,
-    "toppings":{
-        "Geen": 0,
-        "Slagroom": 0.5,
-        "Sprinkels": 0.3
-    }
-}
+
 toppingCosts = 0
 
 textLabel = tkinter.Label()
@@ -128,12 +123,10 @@ def howManyBolletjes():
                     contentCreator("Wilt u deze {} bolletje(s) in een hoorntje of een bakje?".format(aantalToGiveSmaakje[0]), "radio", ["hoorntje", "bakje"])
                     submitBtn.configure(command=hoorntjeOfBakje)
                 elif aantalToGiveSmaakje[0] > 3:
-                    prices["toppings"]["Caramel saus"] = 0.9
                     messagebox.showinfo(message="Dan krijgt u van mij een bakje met {} bolletjes".format(aantalToGiveSmaakje[0]))
                     contentCreator("Wat voor toppings wilt u?", "radio", list(extras["toppings"].keys()))
                     submitBtn.configure(command=toppingValidator)
             else:
-                prices["bolletje"] = 9.8
                 contentCreator("Wilt u nog meer bestellen?", "radio", ["ja", "nee"])
                 submitBtn.configure(command=againBestellen)
     else:
@@ -161,10 +154,8 @@ def hoorntjeOfBakje():
 
     if answer.get() != "":
         if answer.get() == "hoorntje":
-            prices["toppings"]["Caramel saus"] = 0.6
             hoorntjes += 1
         elif answer.get() == "bakje":
-            prices["toppings"]["Caramel saus"] = 0.9
             bakjes += 1
         theContentDestroyer9000()
         contentCreator("Wat voor toppings wilt u?", "radio", list(extras["toppings"].keys()))
@@ -185,7 +176,12 @@ def toppingValidator():
             contentCreator("Wilt u nog meer bestellen?", "radio", ["ja", "nee"])
             submitBtn.configure(command=againBestellen)
 
-            toppingCosts += prices["toppings"][topping]
+            if topping == "caramel":
+                toppingCosts += prices["toppings"][topping][hoorntjeOfBakje]
+            elif topping == "geen":
+                pass
+            else:
+                toppingCosts += prices["toppings"][topping]
             break
     
     if falseAnswer:
@@ -196,21 +192,21 @@ def againBestellen():
         theContentDestroyer9000()
         zakelijkOfParticulierQuestion()
     elif answer.get() == "nee":  
-        bolletjesCost = amountBolletjes * prices["bolletje"]
-        hoorntjesCost = hoorntjes * prices["hoorntje"]
-        bakjesCost = bakjes * prices["bakje"]
+        bolletjesCost = amountBolletjes * prices["bolletjes" if zakelijkOfParticulier == "Particulier" else "liter"]
+        hoorntjesCost = hoorntjes * prices["hoorentjes"]
+        bakjesCost = bakjes * prices["bakjes"]
         totalCost = bolletjesCost + hoorntjesCost + bakjesCost + toppingCosts
 
         theContentDestroyer9000([submitBtn])          
         contentCreator("Bedankt en tot ziens!", "label", [
             '-----------["Papi gileto"]-----------',
-            "{}             {} x €{}     = €{}".format("Bolletje" if zakelijkOfParticulier == "Particulier" else "Liter", amountBolletjes, prices["bolletje"], bolletjesCost),
+            "{}             {} x €{}     = €{}".format("Bolletje" if zakelijkOfParticulier == "Particulier" else "Liter", amountBolletjes, prices["bolletjes" if zakelijkOfParticulier == "Particulier" else "liter"], bolletjesCost),
             "Hoorntje             {} x €{}     = €{}".format(hoorntjes, prices["hoorntje"], hoorntjesCost) if hoorntjesCost > 0 else "",
             "Bakje             {} x €{}     = €{}".format(bakjes, prices["bakje"], bakjesCost) if bakjesCost > 0 else "",
             "Topping                          = €{}".format(toppingCosts) if toppingCosts > 0 else "",
             "                              ------- +",
             "Totaal                      = €{}".format(totalCost),
-            "BTW (9%)                    = €{}".format(round(totalCost/106 * 6, 2))
+            "BTW (9%)                    = €{}".format(round(totalCost/(100 + prices["btw"]) * prices["btw"], 2))
         ])
     else:
         messagebox.showerror(message="Sorry dat is geen optie die we aanbieden...")
